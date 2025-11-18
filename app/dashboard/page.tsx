@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export default function Dashboard() {
   return (
-    <div className="min-h-screen from-slate-50 to-slate-200 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 p-4 md:p-8">
       {/* Header */}
       <header className="flex flex-wrap justify-between items-center mb-12 gap-4">
         <h1 className="text-4xl md:text-5xl font-bold text-[#001f3f] m-0">

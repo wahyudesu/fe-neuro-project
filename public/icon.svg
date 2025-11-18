@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#001f3f" stroke="#0ea5e9" stroke-width="2"/>
+
+  <!-- Wave pattern -->
+  <path d="M 20 45 Q 30 40, 40 45 T 60 45 Q 70 40, 80 45"
+        stroke="#0ea5e9" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 20 55 Q 30 50, 40 55 T 60 55 Q 70 50, 80 55"
+        stroke="#38bdf8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- Neural network nodes -->
+  <circle cx="35" cy="30" r="4" fill="#0ea5e9"/>
+  <circle cx="50" cy="25" r="4" fill="#0ea5e9"/>
+  <circle cx="65" cy="30" r="4" fill="#0ea5e9"/>
+
+  <!-- Neural connections -->
+  <line x1="35" y1="30" x2="50" y2="25" stroke="#38bdf8" stroke-width="1.5" opacity="0.6"/>
+  <line x1="50" y1="25" x2="65" y2="30" stroke="#38bdf8" stroke-width="1.5" opacity="0.6"/>
+  <line x1="35" y1="30" x2="65" y2="30" stroke="#38bdf8" stroke-width="1" opacity="0.4"/>
+
+  <!-- Fish silhouette -->
+  <path d="M 55 70 Q 60 68, 65 70 L 63 73 L 65 75 Q 60 73, 55 75 Q 50 73, 55 70 Z"
+        fill="#0ea5e9" opacity="0.8"/>
+  <circle cx="59" cy="72" r="1" fill="#001f3f"/>
+</svg>

@@ -1,9 +1,44 @@
 'use client'
 import Link from 'next/link'
+import { useState, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
+  const [isExpanding, setIsExpanding] = useState(false)
+  const [showAbout, setShowAbout] = useState(false)
+  const [showTeam, setShowTeam] = useState(false)
+  const buttonRef = useRef<HTMLAnchorElement>(null)
+  const router = useRouter()
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    setIsExpanding(true)
+
+    // Navigate after animation completes
+    setTimeout(() => {
+      router.push('/dashboard')
+    }, 800)
+  }
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center bg-black">
+      {/* Navigation Buttons - Top Right */}
+      <div className="absolute top-8 right-8 z-20 flex gap-4">
+        <button
+          onClick={() => setShowAbout(true)}
+          className="px-6 py-3 bg-white/10 backdrop-blur-md text-white rounded-full font-medium transition-all duration-300 hover:bg-white/20 hover:-translate-y-1 border border-white/20"
+        >
+          About
+        </button>
+        <button
+          onClick={() => setShowTeam(true)}
+          className="px-6 py-3 bg-white/10 backdrop-blur-md text-white rounded-full font-medium transition-all duration-300 hover:bg-white/20 hover:-translate-y-1 border border-white/20"
+        >
+          Team
+        </button>
+      </div>
+
       {/* Video Background dengan Transparansi - OPTIMIZED */}
       <div className="absolute inset-0 z-0">
         <video
@@ -40,20 +75,44 @@ export default function Home() {
             Jelajahi kedalaman pengetahuan maritim dan ekosistem laut dengan platform penelitian terintegrasi
           </p>
 
-          {/* CTA Button dengan Gradient Hover */}
+          {/* CTA Button */}
           <Link
+            ref={buttonRef}
             href="/dashboard"
-            className="group relative inline-flex items-center gap-3 px-12 py-5 text-xl font-semibold text-[#001f3f] bg-white rounded-full transition-all duration-500 shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.5)] hover:-translate-y-1 active:translate-y-0 mt-4 overflow-hidden"
+            onClick={handleClick}
+            className="group relative inline-flex items-center gap-3 px-12 py-5 text-xl font-semibold text-[#001f3f] bg-white rounded-full transition-all duration-500 shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.5)] hover:-translate-y-1 active:translate-y-0 mt-4"
           >
-            {/* Gradient yang muncul saat hover */}
-            <span className="absolute inset-0 bg-linear-to-r from-cyan-400 via-blue-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></span>
-
-            {/* Text yang berubah warna saat hover */}
-            <span className="relative z-10 group-hover:text-white transition-colors duration-500">
-              Lihat Hasil Penelitian
-            </span>
-            <span className="relative z-10 text-2xl transition-all duration-300 group-hover:translate-x-1 group-hover:text-white">→</span>
+            <span>Lihat Hasil Penelitian</span>
+            <span className="text-2xl transition-all duration-300 group-hover:translate-x-1">→</span>
           </Link>
+
+          {/* Expanding Animation Overlay */}
+          <AnimatePresence>
+            {isExpanding && (
+              <motion.div
+                initial={{
+                  position: 'fixed',
+                  top: buttonRef.current?.getBoundingClientRect().top,
+                  left: buttonRef.current?.getBoundingClientRect().left,
+                  width: buttonRef.current?.offsetWidth,
+                  height: buttonRef.current?.offsetHeight,
+                  borderRadius: '9999px',
+                }}
+                animate={{
+                  top: 0,
+                  left: 0,
+                  width: '100vw',
+                  height: '100vh',
+                  borderRadius: '0px',
+                }}
+                transition={{
+                  duration: 0.2,
+                  ease: [0.43, 0.13, 0.23, 0.96]
+                }}
+                className="bg-white z-9999"
+              />
+            )}
+          </AnimatePresence>
 
           {/* Features */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 w-full max-w-4xl">
@@ -74,6 +133,154 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* About Modal */}
+      <AnimatePresence>
+        {showAbout && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAbout(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100"
+            />
+            {/* Modal Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-4xl md:max-h-[90vh] bg-white rounded-3xl shadow-2xl z-101 overflow-y-auto"
+            >
+              <div className="p-6 md:p-12">
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowAbout(false)}
+                  className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-full transition-colors"
+                >
+                  ✕
+                </button>
+
+                {/* Content */}
+                <h2 className="text-3xl md:text-4xl font-bold text-[#001f3f] mb-6 m-0">
+                  About Us
+                </h2>
+                <p className="text-gray-700 text-lg leading-relaxed mb-8">
+                  Platform penelitian maritim yang mengintegrasikan teknologi kecerdasan buatan
+                  untuk deteksi dan analisis ekosistem laut. Kami berkomitmen untuk memajukan
+                  pemahaman tentang kehidupan laut melalui pendekatan berbasis data dan teknologi modern.
+                </p>
+
+                {/* Mission & Vision */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="p-6 bg-slate-50 rounded-2xl">
+                    <div className="text-4xl mb-3">🎯</div>
+                    <h3 className="text-xl font-bold text-[#001f3f] mb-3 m-0">Misi Kami</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed m-0">
+                      Mengembangkan solusi teknologi untuk penelitian maritim yang berkelanjutan,
+                      membantu pelestarian ekosistem laut, dan mendukung komunitas peneliti.
+                    </p>
+                  </div>
+                  <div className="p-6 bg-slate-50 rounded-2xl">
+                    <div className="text-4xl mb-3">🔭</div>
+                    <h3 className="text-xl font-bold text-[#001f3f] mb-3 m-0">Visi Kami</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed m-0">
+                      Menjadi platform terdepan dalam penelitian maritim berbasis AI,
+                      mendorong inovasi dalam konservasi laut.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Features */}
+                <h3 className="text-2xl font-bold text-[#001f3f] mb-6 m-0">Keunggulan Platform</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-slate-50 rounded-xl">
+                    <div className="text-3xl mb-2">🤖</div>
+                    <h4 className="text-lg font-bold text-[#001f3f] mb-1 m-0">AI Detection</h4>
+                    <p className="text-gray-600 text-xs m-0">Deteksi otomatis spesies laut</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-xl">
+                    <div className="text-3xl mb-2">📊</div>
+                    <h4 className="text-lg font-bold text-[#001f3f] mb-1 m-0">Data Analytics</h4>
+                    <p className="text-gray-600 text-xs m-0">Analisis data kompleks</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-xl">
+                    <div className="text-3xl mb-2">🌊</div>
+                    <h4 className="text-lg font-bold text-[#001f3f] mb-1 m-0">Marine Database</h4>
+                    <p className="text-gray-600 text-xs m-0">Database ekosistem laut</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Team Modal */}
+      <AnimatePresence>
+        {showTeam && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowTeam(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100"
+            />
+            {/* Modal Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-5xl md:max-h-[90vh] bg-white rounded-3xl shadow-2xl z-101 overflow-y-auto"
+            >
+              <div className="p-6 md:p-12">
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowTeam(false)}
+                  className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-full transition-colors"
+                >
+                  ✕
+                </button>
+
+                {/* Content */}
+                <h2 className="text-3xl md:text-4xl font-bold text-[#001f3f] mb-4 m-0">
+                  Our Team
+                </h2>
+                <p className="text-gray-700 text-lg leading-relaxed mb-8">
+                  Tim multidisiplin yang terdiri dari para ahli di bidang biologi kelautan,
+                  data science, dan teknologi informasi.
+                </p>
+
+                {/* Team Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-4xl mx-auto">
+                  {[
+                    { name: 'Dea Kayla P D', role: 'Lead Researcher', emoji: '👩‍🔬' },
+                    { name: 'Dinda Ayu P', role: 'Data Scientist', emoji: '👨‍💻' },
+                    { name: 'Izza karimah', role: 'Marine Ecologist', emoji: '🌊' },
+                    { name: 'Aulia Laifa K', role: 'Software Engineer', emoji: '⚙️' },
+                    { name: 'Wahyu Ikbal M', role: 'Oceanographer', emoji: '🔬' },
+                  ].map((member, index) => (
+                    <div key={index} className="p-4 md:p-6 bg-slate-50 rounded-2xl text-center">
+                      <div className="text-4xl md:text-5xl mb-2">{member.emoji}</div>
+                      <h3 className="text-base md:text-lg font-bold text-[#001f3f] mb-1 m-0">
+                        {member.name}
+                      </h3>
+                      <p className="text-cyan-600 text-xs md:text-sm font-semibold m-0">
+                        {member.role}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
