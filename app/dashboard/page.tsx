@@ -24,60 +24,40 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl shadow-lg text-white">
-          <div className="text-4xl mb-2">📊</div>
-          <div className="text-3xl font-bold mb-1">125</div>
-          <div className="text-blue-100">Total Analisis</div>
-        </div>
-        <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-2xl shadow-lg text-white">
-          <div className="text-4xl mb-2">🖼️</div>
-          <div className="text-3xl font-bold mb-1">48</div>
-          <div className="text-green-100">Gambar Terupload</div>
-        </div>
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl shadow-lg text-white">
-          <div className="text-4xl mb-2">🐠</div>
-          <div className="text-3xl font-bold mb-1">32</div>
-          <div className="text-purple-100">Spesies Terdeteksi</div>
-        </div>
-      </div>
+      {/* Main Sections */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Link
+          href="/dashboard/analysis"
+          className="bg-linear-to-br from-blue-500 to-blue-600 p-8 rounded-3xl shadow-lg text-white hover:-translate-y-2 transition-all duration-300 hover:shadow-xl no-underline group"
+        >
+          <div className="text-5xl mb-4">📊</div>
+          <h3 className="text-2xl font-bold mb-2 m-0">Analysis</h3>
+          <p className="text-blue-100 m-0">
+            Lihat dan kelola hasil analisis
+          </p>
+        </Link>
 
-      {/* Quick Actions */}
-      <div className="bg-white p-6 md:p-8 rounded-3xl shadow-lg">
-        <h3 className="text-xl md:text-2xl font-bold text-[#001f3f] mb-6 m-0">
-          Aksi Cepat
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link
-            href="/dashboard/upload"
-            className="flex items-center gap-4 p-6 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-md no-underline group"
-          >
-            <div className="text-4xl">📤</div>
-            <div>
-              <div className="text-lg font-bold text-[#001f3f] group-hover:text-blue-600 transition-colors">
-                Upload Gambar
-              </div>
-              <div className="text-sm text-slate-500">
-                Unggah gambar untuk dianalisis
-              </div>
-            </div>
-          </Link>
-          <Link
-            href="/dashboard/analysis"
-            className="flex items-center gap-4 p-6 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-md no-underline group"
-          >
-            <div className="text-4xl">📊</div>
-            <div>
-              <div className="text-lg font-bold text-[#001f3f] group-hover:text-blue-600 transition-colors">
-                Lihat Hasil
-              </div>
-              <div className="text-sm text-slate-500">
-                Cek hasil analisis terbaru
-              </div>
-            </div>
-          </Link>
-        </div>
+        <Link
+          href="/dashboard/data"
+          className="bg-linear-to-br from-green-500 to-green-600 p-8 rounded-3xl shadow-lg text-white hover:-translate-y-2 transition-all duration-300 hover:shadow-xl no-underline group"
+        >
+          <div className="text-5xl mb-4">📁</div>
+          <h3 className="text-2xl font-bold mb-2 m-0">Data</h3>
+          <p className="text-green-100 m-0">
+            Kelola data penelitian
+          </p>
+        </Link>
+
+        <Link
+          href="/dashboard/upload"
+          className="bg-linear-to-br from-purple-500 to-purple-600 p-8 rounded-3xl shadow-lg text-white hover:-translate-y-2 transition-all duration-300 hover:shadow-xl no-underline group"
+        >
+          <div className="text-5xl mb-4">📤</div>
+          <h3 className="text-2xl font-bold mb-2 m-0">Upload</h3>
+          <p className="text-purple-100 m-0">
+            Unggah gambar untuk dianalisis
+          </p>
+        </Link>
       </div>
     </div>
   )

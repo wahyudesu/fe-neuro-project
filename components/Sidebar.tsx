@@ -19,11 +19,6 @@ const menuItems = [
     href: '/dashboard/analysis',
     icon: '📊',
   },
-  {
-    name: 'Data',
-    href: '/dashboard/data',
-    icon: '📋',
-  },
 ]
 
 export default function Sidebar() {

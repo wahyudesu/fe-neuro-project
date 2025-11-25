@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # Next.js Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: website-neuro-bun
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+    restart: unless-stopped
+    # Uncomment untuk menambahkan volume jika diperlukan
+    # volumes:
+    #   - ./public:/app/public:ro
+
+  # Development mode dengan hot reload
+  web-dev:
+    image: oven/bun:1
+    container_name: website-neuro-bun-dev
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: bun run dev
+    profiles:
+      - dev
+    restart: unless-stopped

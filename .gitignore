@@ -39,3 +39,35 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# database
+*.db
+*.sqlite
+*.sqlite3
+
+# model files (large files)
+model/
+*.keras
+*.h5
+*.pkl
+*.weights.h5
+
+# tfjs models (comment out if you want to commit them)
+# public/tfjs_model/
+# public/tfjs_graphmodel/
+
+# bun
+bun.lockb

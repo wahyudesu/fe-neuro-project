@@ -203,7 +203,7 @@ export default function Home() {
                   </div>
                   <div className="p-4 bg-slate-50 rounded-xl">
                     <div className="text-3xl mb-2">📊</div>
-                    <h4 className="text-lg font-bold text-[#001f3f] mb-1 m-0">Data Analytics</h4>
+                    <h4 className="text-lg font-bold text-[#001f3f] mb-1 m-0">ML Prediction</h4>
                     <p className="text-gray-600 text-xs m-0">Analisis data kompleks</p>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-xl">
