@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 interface Prediction {
   id: number;
@@ -170,11 +171,16 @@ export default function DataPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {pred.image_url ? (
                         <div className="flex items-center gap-2">
-                          <img
-                            src={pred.image_url}
-                            alt={pred.image_name}
-                            className="w-12 h-12 object-cover rounded-lg"
-                          />
+                          <div className="relative w-12 h-12 rounded-lg overflow-hidden">
+                            <Image
+                              src={pred.image_url as string}
+                              alt={pred.image_name}
+                              fill
+                              className="object-cover"
+                              sizes="48px"
+                              unoptimized
+                            />
+                          </div>
                           <span className="truncate max-w-[150px]">
                             {pred.image_name}
                           </span>

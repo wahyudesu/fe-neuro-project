@@ -1,17 +1,24 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import * as tf from '@tensorflow/tfjs';
 
 // Register custom Erfc operation (used by GELU activation)
 // Erfc(x) = 1 - Erf(x)
 if (typeof window !== 'undefined') {
-  tf.registerOp('Erfc', (node: any) => {
+  interface OpNode {
+    inputs: tf.Tensor[];
+  }
+
+  tf.registerOp('Erfc', (node: OpNode) => {
     return tf.tidy(() => {
       const x = node.inputs[0] as tf.Tensor;
       // Erfc(x) = 1 - Erf(x)
       // Use tf.erf if available, otherwise approximate
-      const erfValue = (tf as any).erf ? (tf as any).erf(x) : approximateErf(x);
+  // tf.erf may not be available in all builds, so use a typed guard
+  const tfWithErf = tf as unknown as { erf?: (x: tf.Tensor) => tf.Tensor };
+  const erfValue = tfWithErf.erf ? tfWithErf.erf(x) : approximateErf(x);
       return tf.sub(1, erfValue);
     });
   });
@@ -74,6 +81,7 @@ export default function CoralPredictPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'upload' | 'sample'>('upload');
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sample images dari folder public
@@ -114,7 +122,7 @@ export default function CoralPredictPage() {
       const reader = new FileReader();
 
       reader.onload = (e) => {
-        const img = new Image();
+  const img = new window.Image();
 
         img.onload = () => {
           // Resize ke 224x224
@@ -157,11 +165,22 @@ export default function CoralPredictPage() {
 
   // Preprocess gambar dari URL
   const preprocessImageFromUrl = async (imageUrl: string): Promise<tf.Tensor> => {
+    console.log('🖼️ Preprocessing image from URL:', imageUrl);
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
+  const img = new window.Image();
+      console.log('📷 Creating image element...');
+
+      // Remove crossOrigin for local images
+      if (!imageUrl.startsWith('http')) {
+        console.log('🏠 Local image, no CORS needed');
+        // Local image, no need for CORS
+      } else {
+        console.log('🌐 External image, setting CORS');
+        img.crossOrigin = 'anonymous';
+      }
 
       img.onload = () => {
+        console.log('✅ Image loaded successfully, size:', img.width, 'x', img.height);
         // Resize ke 224x224
         const canvas = document.createElement('canvas');
         canvas.width = 224;
@@ -175,6 +194,7 @@ export default function CoralPredictPage() {
 
         // Draw image
         ctx.drawImage(img, 0, 0, 224, 224);
+        console.log('🎨 Image drawn to canvas');
 
         // Convert ke tensor dan normalize (0-1)
         const tensor = tf.browser.fromPixels(canvas)
@@ -182,39 +202,39 @@ export default function CoralPredictPage() {
           .div(255.0)
           .expandDims(0); // Add batch dimension
 
+        console.log('🔢 Tensor created, shape:', tensor.shape);
         resolve(tensor);
       };
 
-      img.onerror = () => {
-        reject(new Error('Failed to load image from URL'));
+      img.onerror = (e) => {
+        console.error('❌ Failed to load image from URL:', imageUrl, e);
+        reject(new Error(`Failed to load image from URL: ${imageUrl}`));
       };
 
+      console.log('🔗 Setting image src to:', imageUrl);
       img.src = imageUrl;
     });
   };
 
-  // Predict
+  // Auto predict on file select
   const handlePredict = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0] || !model) return;
 
+    const file = e.target.files[0];
+    setLoading(true);
+    setError(null);
+    setPrediction(null);
+
     try {
-      setLoading(true);
-      setError(null);
-      setPrediction(null);
-
-      const file = e.target.files[0];
-
-      // Set image preview
+      // Set preview immediately
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
 
-      // Preprocess
+      // Auto predict
       const tensor = await preprocessImage(file);
-
-      // Predict with GraphModel
       const predictions = model.predict(tensor) as tf.Tensor;
       const probabilities = await predictions.data();
 
@@ -232,17 +252,14 @@ export default function CoralPredictPage() {
       };
 
       setPrediction(predictionResult);
-
-      // Save to database
       await savePredictionToDb(file.name, undefined, predictionResult);
 
-      // Cleanup tensors
       tensor.dispose();
       predictions.dispose();
 
     } catch (err) {
-      console.error('Error during prediction:', err);
-      setError('Failed to process image. Please try again.');
+      console.error('Error:', err);
+      setError('Prediction failed');
     } finally {
       setLoading(false);
     }
@@ -250,6 +267,28 @@ export default function CoralPredictPage() {
 
   const handleButtonClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files?.[0] && model) {
+      const fakeEvent = {
+        target: { files }
+      } as React.ChangeEvent<HTMLInputElement>;
+      handlePredict(fakeEvent);
+    }
   };
 
   const resetPrediction = () => {
@@ -297,7 +336,11 @@ export default function CoralPredictPage() {
 
   // Handle sample image selection
   const handleSampleImageClick = async (imageUrl: string) => {
-    if (!model || loading) return;
+    console.log('🖼️ Sample image clicked:', imageUrl);
+    if (!model || loading) {
+      console.log('❌ Model not ready or loading:', { model: !!model, loading });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -305,12 +348,16 @@ export default function CoralPredictPage() {
       setPrediction(null);
       setImagePreview(imageUrl);
 
+      console.log('🔄 Starting prediction for sample image...');
+
       // Preprocess dari URL
       const tensor = await preprocessImageFromUrl(imageUrl);
+      console.log('✅ Image preprocessed successfully');
 
       // Predict with GraphModel
       const predictions = model.predict(tensor) as tf.Tensor;
       const probabilities = await predictions.data();
+      console.log('📊 Prediction probabilities:', probabilities);
 
       const classes = ['Bleached', 'Healthy'];
       const maxProb = Math.max(...probabilities);
@@ -325,6 +372,7 @@ export default function CoralPredictPage() {
         }
       };
 
+      console.log('🎯 Prediction result:', predictionResult);
       setPrediction(predictionResult);
 
       // Save to database
@@ -336,8 +384,8 @@ export default function CoralPredictPage() {
       predictions.dispose();
 
     } catch (err) {
-      console.error('Error during prediction:', err);
-      setError('Failed to process image. Please try again.');
+      console.error('❌ Error during prediction:', err);
+      setError(`Failed to process image: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -388,7 +436,7 @@ export default function CoralPredictPage() {
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            Upload Image
+            🎯 Instant Upload
           </button>
           <button
             onClick={() => {
@@ -401,7 +449,7 @@ export default function CoralPredictPage() {
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            Use Sample Images
+            📸 Sample Images
           </button>
         </div>
 
@@ -419,20 +467,39 @@ export default function CoralPredictPage() {
                 className="hidden"
               />
 
-              <button
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
                 onClick={handleButtonClick}
-                disabled={!model || loading}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
+                className={`
+                  w-full border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
+                  transition-all duration-300
+                  ${isDragging 
+                    ? 'border-blue-500 bg-blue-50 scale-105' 
+                    : 'border-gray-300 hover:border-blue-400'
+                  }
+                  ${!model || loading ? 'opacity-50 cursor-not-allowed' : ''}
+                `}
               >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Processing...
-                  </span>
-                ) : (
-                  'Choose Image to Predict'
-                )}
-              </button>
+                <div className="text-4xl mb-4">🎯</div>
+                <button
+                  disabled={!model || loading}
+                  className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Processing...
+                    </span>
+                  ) : (
+                    'Drop atau Pilih Gambar - Auto Predict!'
+                  )}
+                </button>
+                <p className="text-sm text-gray-500 mt-2">
+                  Drag & drop atau klik untuk upload dan prediksi otomatis
+                </p>
+              </div>
             </div>
           )}
 
@@ -448,14 +515,17 @@ export default function CoralPredictPage() {
                     key={img.id}
                     onClick={() => handleSampleImageClick(img.src)}
                     disabled={!model || loading}
-                    className="group relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transform hover:scale-105"
+                    className="group relative w-full aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transform hover:scale-105"
                   >
-                    <img
+                    <Image
                       src={img.src}
                       alt={img.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, 33vw"
+                      unoptimized
                     />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
                       <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium">
                         {img.id}
                       </span>
@@ -482,11 +552,16 @@ export default function CoralPredictPage() {
                   Input Image
                 </h3>
                 <div className="border-4 border-gray-200 rounded-lg overflow-hidden">
-                  <img
-                    src={imagePreview}
-                    alt="Uploaded coral"
-                    className="w-full h-auto"
-                  />
+                  <div className="w-full h-auto relative aspect-[4/3]">
+                    <Image
+                      src={imagePreview as string}
+                      alt="Uploaded coral"
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      unoptimized
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -566,6 +641,10 @@ export default function CoralPredictPage() {
                   >
                     Try Another Image
                   </button>
+                  
+                  <div className="text-xs text-green-600 text-center mt-2">
+                    ✅ Saved to database
+                  </div>
                 </div>
               )}
             </div>
@@ -574,12 +653,12 @@ export default function CoralPredictPage() {
           {/* Info */}
           {!imagePreview && activeTab === 'upload' && (
             <div className="text-center text-gray-500 py-12">
-              <div className="text-6xl mb-4">🔍</div>
-              <p className="text-lg">
-                Upload a coral reef image to get started
+              <div className="text-6xl mb-4">🎯</div>
+              <p className="text-lg font-semibold">
+                Drop gambar untuk prediksi instant!
               </p>
               <p className="text-sm mt-2">
-                Supported formats: JPG, PNG, WebP
+                Auto-predict + save to database • JPG, PNG, WebP
               </p>
             </div>
           )}
@@ -588,13 +667,13 @@ export default function CoralPredictPage() {
         {/* Model Info */}
         <div className="mt-6 bg-white rounded-xl shadow p-6">
           <h3 className="font-semibold text-gray-700 mb-2">
-            About this Model
+            ✨ Instant Prediction Features
           </h3>
           <ul className="text-sm text-gray-600 space-y-1">
-            <li>• Model: Vision Transformer (ViT) Lite</li>
-            <li>• Input Size: 224x224 pixels</li>
-            <li>• Classes: Bleached, Healthy</li>
-            <li>• Test Accuracy: 98.83%</li>
+            <li>• 🎯 Drag & drop untuk prediksi otomatis</li>
+            <li>• 💾 Auto-save ke database dengan akurasi</li>
+            <li>• ⚡ Model: Vision Transformer (ViT) - 98.83% accuracy</li>
+            <li>• 🔄 No manual steps - just drop and get results!</li>
           </ul>
         </div>
       </div>

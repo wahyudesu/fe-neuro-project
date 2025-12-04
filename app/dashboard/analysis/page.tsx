@@ -1,73 +1,51 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
-// Sample data
-const sampleAnalysis = [
-  {
-    id: 1,
-    image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400',
-    species: 'Ikan Badut (Clownfish)',
-    confidence: 95.8,
-    date: '2025-11-18',
-    status: 'completed',
-    details: {
-      habitat: 'Terumbu Karang',
-      size: 'Sedang (10-15 cm)',
-      behavior: 'Simbiosis dengan anemon',
-    },
-  },
-  {
-    id: 2,
-    image: 'https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=400',
-    species: 'Pari Manta (Manta Ray)',
-    confidence: 92.3,
-    date: '2025-11-17',
-    status: 'completed',
-    details: {
-      habitat: 'Perairan Terbuka',
-      size: 'Besar (3-5 meter)',
-      behavior: 'Perenang aktif',
-    },
-  },
-  {
-    id: 3,
-    image: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=400',
-    species: 'Hiu Paus (Whale Shark)',
-    confidence: 89.5,
-    date: '2025-11-16',
-    status: 'completed',
-    details: {
-      habitat: 'Perairan Tropis',
-      size: 'Sangat Besar (8-12 meter)',
-      behavior: 'Filter feeder',
-    },
-  },
-  {
-    id: 4,
-    image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400',
-    species: 'Penyu Hijau (Green Turtle)',
-    confidence: 97.2,
-    date: '2025-11-15',
-    status: 'completed',
-    details: {
-      habitat: 'Perairan Dangkal',
-      size: 'Besar (80-150 cm)',
-      behavior: 'Herbivora',
-    },
-  },
-]
+// Define the analysis type
+type AnalysisItem = {
+  id: number
+  image_name: string
+  image_url: string | null
+  predicted_class: string
+  confidence: number
+  probability_bleached: number
+  probability_healthy: number
+  created_at: string
+}
 
 export default function AnalysisPage() {
+  const [analyses, setAnalyses] = useState<AnalysisItem[]>([])
   const [selectedAnalysis, setSelectedAnalysis] = useState<number | null>(null)
   const [filter, setFilter] = useState<'all' | 'high' | 'medium'>('all')
+  const [loading, setLoading] = useState(true)
 
-  const filteredAnalysis = sampleAnalysis.filter((item) => {
+  // Fetch analyses from API
+  useEffect(() => {
+    const fetchAnalyses = async () => {
+      try {
+        const response = await fetch('/api/predictions')
+        const data = await response.json()
+        if (data.success) {
+          setAnalyses(data.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch analyses:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAnalyses()
+  }, [])
+
+  const filteredAnalysis = analyses.filter((item) => {
     if (filter === 'high') return item.confidence >= 90
     if (filter === 'medium') return item.confidence >= 80 && item.confidence < 90
     return true
   })
 
-  const selectedItem = sampleAnalysis.find((item) => item.id === selectedAnalysis)
+  const selectedItem = analyses.find((item) => item.id === selectedAnalysis)
 
   return (
     <div>
@@ -86,21 +64,21 @@ export default function AnalysisPage() {
         <div className="bg-white p-6 rounded-2xl shadow-lg">
           <div className="text-3xl mb-2">📊</div>
           <div className="text-2xl font-bold text-[#001f3f]">
-            {sampleAnalysis.length}
+            {analyses.length}
           </div>
           <div className="text-sm text-slate-500">Total Analisis</div>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-lg">
           <div className="text-3xl mb-2">✅</div>
           <div className="text-2xl font-bold text-green-600">
-            {sampleAnalysis.filter((a) => a.confidence >= 90).length}
+            {analyses.filter((a) => a.confidence >= 90).length}
           </div>
           <div className="text-sm text-slate-500">High Confidence</div>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-lg">
           <div className="text-3xl mb-2">🐠</div>
           <div className="text-2xl font-bold text-blue-600">
-            {new Set(sampleAnalysis.map((a) => a.species)).size}
+            {new Set(analyses.map((a) => a.predicted_class)).size}
           </div>
           <div className="text-sm text-slate-500">Spesies Unik</div>
         </div>
@@ -120,7 +98,7 @@ export default function AnalysisPage() {
               }
             `}
           >
-            Semua ({sampleAnalysis.length})
+            Semua ({analyses.length})
           </button>
           <button
             onClick={() => setFilter('high')}
@@ -155,54 +133,69 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* List */}
         <div className="space-y-4">
-          {filteredAnalysis.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => setSelectedAnalysis(item.id)}
-              className={`
-                bg-white p-4 md:p-6 rounded-2xl shadow-lg
-                cursor-pointer transition-all duration-300
-                hover:-translate-y-1 hover:shadow-xl
-                ${selectedAnalysis === item.id ? 'ring-2 ring-[#001f3f]' : ''}
-              `}
-            >
-              <div className="flex gap-4">
-                <div className="w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-                  <img
-                    src={item.image}
-                    alt={item.species}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-[#001f3f] mb-1 m-0 truncate">
-                    {item.species}
-                  </h3>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div
-                      className={`
-                      px-3 py-1 rounded-full text-xs font-semibold
-                      ${
-                        item.confidence >= 90
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }
-                    `}
-                    >
-                      {item.confidence}% Confidence
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#001f3f]"></div>
+              <p className="mt-2 text-slate-600">Memuat data...</p>
+            </div>
+          ) : filteredAnalysis.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-slate-600">Belum ada data analisis</p>
+            </div>
+          ) : (
+            filteredAnalysis.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => setSelectedAnalysis(item.id)}
+                className={`
+                  bg-white p-4 md:p-6 rounded-2xl shadow-lg
+                  cursor-pointer transition-all duration-300
+                  hover:-translate-y-1 hover:shadow-xl
+                  ${selectedAnalysis === item.id ? 'ring-2 ring-[#001f3f]' : ''}
+                `}
+              >
+                <div className="flex gap-4">
+                  <div className="w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={item.image_url || 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400'}
+                        alt={item.predicted_class}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, 33vw"
+                      />
                     </div>
                   </div>
-                  <p className="text-sm text-slate-500 m-0">
-                    📅 {new Date(item.date).toLocaleDateString('id-ID', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-[#001f3f] mb-1 m-0 truncate">
+                      {item.predicted_class}
+                    </h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        className={`
+                        px-3 py-1 rounded-full text-xs font-semibold
+                        ${
+                          item.confidence >= 90
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }
+                      `}
+                      >
+                        {item.confidence.toFixed(1)}% Confidence
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-500 m-0">
+                      📅 {new Date(item.created_at).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Detail Panel */}
@@ -210,15 +203,19 @@ export default function AnalysisPage() {
           {selectedItem ? (
             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
               <div className="aspect-video rounded-xl overflow-hidden bg-slate-100 mb-6">
-                <img
-                  src={selectedItem.image}
-                  alt={selectedItem.species}
-                  className="w-full h-full object-cover"
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    src={selectedItem.image_url || 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400'}
+                    alt={selectedItem.predicted_class}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                  />
+                </div>
               </div>
 
               <h2 className="text-2xl font-bold text-[#001f3f] mb-4 m-0">
-                {selectedItem.species}
+                {selectedItem.predicted_class}
               </h2>
 
               <div className="space-y-4 mb-6">
@@ -236,7 +233,7 @@ export default function AnalysisPage() {
                       />
                     </div>
                     <span className="text-lg font-bold text-[#001f3f]">
-                      {selectedItem.confidence}%
+                      {selectedItem.confidence.toFixed(1)}%
                     </span>
                   </div>
                 </div>
@@ -245,27 +242,27 @@ export default function AnalysisPage() {
                   <div className="text-sm text-slate-500 mb-2">Detail Informasi</div>
                   <div className="space-y-2">
                     <div className="flex justify-between p-3 bg-slate-50 rounded-lg">
-                      <span className="text-slate-600">Habitat</span>
+                      <span className="text-slate-600">Confidence</span>
                       <span className="font-semibold text-[#001f3f]">
-                        {selectedItem.details.habitat}
+                        {selectedItem.confidence.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between p-3 bg-slate-50 rounded-lg">
-                      <span className="text-slate-600">Ukuran</span>
+                      <span className="text-slate-600">Probabilitas Bleached</span>
                       <span className="font-semibold text-[#001f3f]">
-                        {selectedItem.details.size}
+                        {(selectedItem.probability_bleached * 100).toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between p-3 bg-slate-50 rounded-lg">
-                      <span className="text-slate-600">Perilaku</span>
+                      <span className="text-slate-600">Probabilitas Healthy</span>
                       <span className="font-semibold text-[#001f3f]">
-                        {selectedItem.details.behavior}
+                        {(selectedItem.probability_healthy * 100).toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between p-3 bg-slate-50 rounded-lg">
                       <span className="text-slate-600">Tanggal Analisis</span>
                       <span className="font-semibold text-[#001f3f]">
-                        {new Date(selectedItem.date).toLocaleDateString('id-ID')}
+                        {new Date(selectedItem.created_at).toLocaleDateString('id-ID')}
                       </span>
                     </div>
                   </div>

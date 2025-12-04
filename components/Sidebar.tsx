@@ -9,11 +9,21 @@ const menuItems = [
     href: '/dashboard',
     icon: '🏠',
   },
+  // {
+  //   name: 'Instant Predict',
+  //   href: '/dashboard/predict-instant',
+  //   icon: '🎯',
+  // },
   {
-    name: 'Upload Gambar',
-    href: '/dashboard/upload',
-    icon: '📤',
+    name: 'Predict Manual',
+    href: '/dashboard/predict',
+    icon: '🔍',
   },
+  // {
+  //   name: 'Upload Gambar',
+  //   href: '/dashboard/upload',
+  //   icon: '📤',
+  // },
   {
     name: 'Hasil Analisis',
     href: '/dashboard/analysis',

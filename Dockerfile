@@ -1,6 +1,9 @@
 # Dockerfile untuk Next.js dengan Bun
 FROM oven/bun:1 AS base
 
+# Install Python for better-sqlite3 compatibility
+RUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
@@ -31,6 +34,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PREDICTIONS_DB_PATH=/app/data/coral-predictions.db
 
 # Create a non-root user
 RUN addgroup --system --gid 1001 nodejs
@@ -47,6 +51,10 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Ensure persistent data directory exists and is writable by non-root user
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
+VOLUME ["/app/data"]
+
 USER nextjs
 
 EXPOSE 3000
@@ -54,5 +62,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application
-CMD ["bun", "run", "server.js"]
+# Start the application using the standalone server created by `next build`.
+# Use Bun to execute the server script placed in the image's root by the `COPY` step.
+CMD ["bun", "server.js"]

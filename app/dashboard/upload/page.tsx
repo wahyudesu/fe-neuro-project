@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 
 export default function UploadPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -53,9 +54,45 @@ export default function UploadPage() {
     if (selectedFiles.length === 0) return
 
     setIsUploading(true)
-    // Simulate upload
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsUploading(false)
+    // Upload each file to the server (base64 approach)
+    try {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i]
+        const previewBase64 = previews[i]
+        if (!previewBase64) continue
+
+        // Optional: enforce size limit (10MB)
+        const MAX_SIZE = 10 * 1024 * 1024
+        if (file.size > MAX_SIZE) {
+          alert(`${file.name} terlalu besar (maks 10MB)`)
+          continue
+        }
+
+        const payload = {
+          imageName: file.name,
+          imageBase64: previewBase64,
+          predictedClass: 'Pending',
+          confidence: 0,
+          probabilityBleached: 0,
+          probabilityHealthy: 0,
+        }
+
+        const res = await fetch('/api/predictions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        const json = await res.json()
+        if (!json?.success) {
+          console.error('Upload failed for', file.name, json)
+          alert(`Upload failed for ${file.name}: ${json?.error ?? 'Unknown error'}`)
+        }
+      }
+    } catch (err) {
+      console.error('Error uploading files:', err)
+      alert('Terjadi kesalahan saat mengupload.')
+    }
+  setIsUploading(false)
 
     // Show success message
     alert(`${selectedFiles.length} gambar berhasil diupload!`)
@@ -145,11 +182,15 @@ export default function UploadPage() {
                 key={index}
                 className="relative group aspect-square rounded-xl overflow-hidden bg-slate-100"
               >
-                <img
-                  src={preview}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button
                     onClick={() => handleRemoveFile(index)}
